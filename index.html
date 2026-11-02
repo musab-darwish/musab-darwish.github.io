@@ -253,10 +253,12 @@ nav a:hover::after{transform:scaleX(1)}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important}.rv-wait{opacity:1;transform:none}}
 </style>
-<script>(function(){var d=document.documentElement;try{if(localStorage.getItem('mode')==='light')d.setAttribute('data-mode','light')}catch(e){}
+<script>(function(){var d=document.documentElement;try{if(localStorage.getItem('mode')==='light')d.setAttribute('data-mode','light');if(localStorage.getItem('lang-choice')==='ar'){d.setAttribute('data-lang','ar');d.lang='ar';d.dir='rtl'}}catch(e){}
 var seen=false;try{seen=sessionStorage.getItem('intro')==='1'}catch(e){}
 if(!seen&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)){d.classList.add('loading');setTimeout(function(){d.classList.remove('loading')},5000)}})();</script>
 
+</head>
+<body>
 <div class="loader" id="loader" aria-hidden="true">
   <div class="ld">
     <div class="ld-mark"><i>/</i><b>musab</b></div>
@@ -264,8 +266,6 @@ if(!seen&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').mat
     <div class="ld-row"><span>Gaza, PS</span><span id="ld-num">000</span></div>
   </div>
 </div>
-</head>
-<body>
 <header>
   <div class="wrap bar">
     <a class="logo" href="#top" aria-label="Musab Darwish"><span>/</span>musab</a>
@@ -453,18 +453,17 @@ if(!seen&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').mat
 <script>
 (function(){
   var root=document.documentElement;
-  function apply(l){
+  function apply(l,save){
     root.setAttribute('data-lang',l);
     root.lang=l;
     root.dir=l==='ar'?'rtl':'ltr';
-    try{localStorage.setItem('lang',l)}catch(e){}
+    if(save){try{localStorage.setItem('lang-choice',l)}catch(e){}}
   }
   var saved=null;
-  try{saved=localStorage.getItem('lang')}catch(e){}
-  var initial=saved||((navigator.language||'').toLowerCase().indexOf('ar')===0?'ar':'en');
-  apply(initial);
+  try{saved=localStorage.getItem('lang-choice');localStorage.removeItem('lang')}catch(e){}
+  apply(saved==='ar'?'ar':'en');
   document.getElementById('lang-toggle').addEventListener('click',function(){
-    apply(root.getAttribute('data-lang')==='ar'?'en':'ar');
+    apply(root.getAttribute('data-lang')==='ar'?'en':'ar',true);
   });
   var main=document.getElementById('ul-main');
   document.querySelectorAll('.thumb').forEach(function(t){

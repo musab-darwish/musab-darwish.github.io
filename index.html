@@ -200,17 +200,22 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 /* loader: shown once per visit, holds the hero sequence until it lifts */
 .loader{display:none}
 :root.loading .loader{display:grid}
-.loader{position:fixed;inset:0;z-index:50;background:var(--bg);place-items:center;padding:max(16px,env(safe-area-inset-left,0px));transition:clip-path .9s cubic-bezier(.76,0,.24,1);clip-path:inset(0 0 0 0)}
-.loader.out{display:grid;clip-path:inset(0 0 100% 0)}
+.loader{position:fixed;inset:0;z-index:50;background:var(--bg);place-items:center;padding:max(16px,env(safe-area-inset-left,0px));transition:transform .85s cubic-bezier(.76,0,.24,1);will-change:transform}
+.loader.out{display:grid;transform:translateY(-100%)}
 .ld{display:grid;justify-items:center;gap:22px;width:min(280px,80vw)}
-.ld-mark{font-family:var(--font-mono);font-size:clamp(30px,6vw,44px);font-weight:500;color:var(--fg);direction:ltr;display:flex;align-items:baseline}
-.ld-mark i{font-style:normal;color:var(--accent);display:inline-block;animation:slash .8s .15s cubic-bezier(.2,.7,.2,1) both}
-.ld-mark b{font-weight:500;display:inline-block;overflow:hidden;white-space:nowrap;max-width:0;animation:type .9s .45s steps(5,end) forwards}
-@keyframes type{to{max-width:6ch}}
+.ld-mark{font-family:var(--font-mono);font-size:clamp(30px,6vw,44px);font-weight:500;color:var(--fg);direction:ltr;line-height:1.15;display:flex;overflow:hidden;padding-block:.12em}
+.ld-mark span{display:inline-block;transform:translateY(115%) rotate(6deg);transform-origin:0 100%;will-change:transform}
+.ld-mark .s{color:var(--accent);margin-right:.04em}
+.ld.go .ld-mark span{animation:ld-up .95s calc(var(--i) * .065s) cubic-bezier(.16,1,.3,1) both}
+.ld.done .ld-mark span{animation:ld-out .6s calc(var(--i) * .04s) cubic-bezier(.65,0,.35,1) both}
+@keyframes ld-up{from{transform:translateY(115%) rotate(6deg)}to{transform:translateY(0) rotate(0)}}
+@keyframes ld-out{from{transform:translateY(0)}to{transform:translateY(-115%)}}
 .ld-bar{width:100%;height:1px;background:var(--line);position:relative;overflow:hidden}
 .ld-bar span{position:absolute;inset:0;background:var(--accent);transform:scaleX(var(--p,0));transform-origin:left;transition:transform .15s linear}
 .ld-row{width:100%;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:var(--muted);direction:ltr;font-variant-numeric:tabular-nums}
-.ld.done{transition:opacity .3s;opacity:0}
+.ld-bar,.ld-row{opacity:0;transition:opacity .5s .25s}
+.ld.go .ld-bar,.ld.go .ld-row{opacity:1}
+.ld.done .ld-bar,.ld.done .ld-row{opacity:0;transition:opacity .3s}
 :root.loading .hero-text>*,:root.loading .portrait img,:root.loading h1 em,:root.loading h1 .hl,:root.loading .logo span{animation-play-state:paused}
 :root.loading body{overflow:hidden}
 
@@ -261,7 +266,7 @@ if(!seen&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').mat
 <body>
 <div class="loader" id="loader" aria-hidden="true">
   <div class="ld">
-    <div class="ld-mark"><i>/</i><b>musab</b></div>
+    <div class="ld-mark"><span class="s" style="--i:0">/</span><span style="--i:1">m</span><span style="--i:2">u</span><span style="--i:3">s</span><span style="--i:4">a</span><span style="--i:5">b</span></div>
     <div class="ld-bar"><span id="ld-bar"></span></div>
     <div class="ld-row"><span>Gaza, PS</span><span id="ld-num">000</span></div>
   </div>
@@ -495,18 +500,26 @@ if(!seen&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').mat
   }
   (function(){
     var L=document.getElementById('loader');if(!root.classList.contains('loading')){if(L)L.remove();return}
-    var bar=document.getElementById('ld-bar'),num=document.getElementById('ld-num'),t0=performance.now(),MIN=1500,loaded=document.readyState==='complete';
+    var ld=L.firstElementChild,bar=document.getElementById('ld-bar'),num=document.getElementById('ld-num'),t0=0,MIN=1200,loaded=document.readyState==='complete';
     if(!loaded)addEventListener('load',function(){loaded=true});
     function frame(t){
-      var k=Math.min(1,(t-t0)/MIN);if(!loaded)k=Math.min(k,.9);
-      var e=1-Math.pow(1-k,3),v=Math.round(e*100);
+      if(!root.classList.contains('loading')){L.remove();return}
+      if(!t0)t0=t;
+      var k=Math.min(1,(t-t0)/MIN);if(!loaded&&t-t0<3000)k=Math.min(k,.9);
+      var e=1-Math.pow(1-k,2),v=Math.round(e*100);
       bar.style.setProperty('--p',e);num.textContent=('00'+v).slice(-3);
       if(k<1)return requestAnimationFrame(frame);
-      setTimeout(function(){L.firstElementChild.classList.add('done');L.classList.add('out');root.classList.remove('loading');
-        try{sessionStorage.setItem('intro','1')}catch(e){}
-        setTimeout(function(){L.remove()},1000)},250);
+      setTimeout(function(){
+        ld.classList.add('done');
+        setTimeout(function(){
+          L.classList.add('out');root.classList.remove('loading');
+          try{sessionStorage.setItem('intro','1')}catch(e){}
+          setTimeout(function(){L.remove()},1000);
+        },300);
+      },250);
     }
-    requestAnimationFrame(frame);
+    function go(){if(ld.classList.contains('go'))return;ld.classList.add('go');requestAnimationFrame(frame)}
+    if(document.fonts&&document.fonts.load){document.fonts.load('500 44px "IBM Plex Mono"').then(go,go);setTimeout(go,600)}else go();
   })();
   var btn=document.getElementById('copy-email');
   btn.addEventListener('click',function(){

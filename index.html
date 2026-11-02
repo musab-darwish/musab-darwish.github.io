@@ -197,6 +197,23 @@ h3{font-size:26px;font-weight:500;margin:0;letter-spacing:-.01em;direction:ltr;t
 footer{border-top:1px solid var(--line);padding-block:28px 40px}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
+/* loader: shown once per visit, holds the hero sequence until it lifts */
+.loader{display:none}
+:root.loading .loader{display:grid}
+.loader{position:fixed;inset:0;z-index:50;background:var(--bg);place-items:center;padding:max(16px,env(safe-area-inset-left,0px));transition:clip-path .9s cubic-bezier(.76,0,.24,1);clip-path:inset(0 0 0 0)}
+.loader.out{display:grid;clip-path:inset(0 0 100% 0)}
+.ld{display:grid;justify-items:center;gap:22px;width:min(280px,80vw)}
+.ld-mark{font-family:var(--font-mono);font-size:clamp(30px,6vw,44px);font-weight:500;color:var(--fg);direction:ltr;display:flex;align-items:baseline}
+.ld-mark i{font-style:normal;color:var(--accent);display:inline-block;animation:slash .8s .15s cubic-bezier(.2,.7,.2,1) both}
+.ld-mark b{font-weight:500;display:inline-block;overflow:hidden;white-space:nowrap;max-width:0;animation:type .9s .45s steps(5,end) forwards}
+@keyframes type{to{max-width:6ch}}
+.ld-bar{width:100%;height:1px;background:var(--line);position:relative;overflow:hidden}
+.ld-bar span{position:absolute;inset:0;background:var(--accent);transform:scaleX(var(--p,0));transform-origin:left;transition:transform .15s linear}
+.ld-row{width:100%;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:var(--muted);direction:ltr;font-variant-numeric:tabular-nums}
+.ld.done{transition:opacity .3s;opacity:0}
+:root.loading .hero-text>*,:root.loading .portrait img,:root.loading h1 em,:root.loading h1 .hl,:root.loading .logo span{animation-play-state:paused}
+:root.loading body{overflow:hidden}
+
 /* motion: one load sequence in the hero, quiet reveals and hovers after it */
 @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes unveil{from{clip-path:inset(100% 0 0 0);transform:scale(1.04)}to{clip-path:inset(0 0 0 0);transform:none}}
@@ -236,8 +253,17 @@ nav a:hover::after{transform:scaleX(1)}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important}.rv-wait{opacity:1;transform:none}}
 </style>
-<script>try{if(localStorage.getItem('mode')==='light')document.documentElement.setAttribute('data-mode','light')}catch(e){}</script>
+<script>(function(){var d=document.documentElement;try{if(localStorage.getItem('mode')==='light')d.setAttribute('data-mode','light')}catch(e){}
+var seen=false;try{seen=sessionStorage.getItem('intro')==='1'}catch(e){}
+if(!seen&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)){d.classList.add('loading');setTimeout(function(){d.classList.remove('loading')},5000)}})();</script>
 
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="ld">
+    <div class="ld-mark"><i>/</i><b>musab</b></div>
+    <div class="ld-bar"><span id="ld-bar"></span></div>
+    <div class="ld-row"><span>Gaza, PS</span><span id="ld-num">000</span></div>
+  </div>
+</div>
 </head>
 <body>
 <header>
@@ -468,6 +494,21 @@ nav a:hover::after{transform:scaleX(1)}
       }
     });
   }
+  (function(){
+    var L=document.getElementById('loader');if(!root.classList.contains('loading')){if(L)L.remove();return}
+    var bar=document.getElementById('ld-bar'),num=document.getElementById('ld-num'),t0=performance.now(),MIN=1500,loaded=document.readyState==='complete';
+    if(!loaded)addEventListener('load',function(){loaded=true});
+    function frame(t){
+      var k=Math.min(1,(t-t0)/MIN);if(!loaded)k=Math.min(k,.9);
+      var e=1-Math.pow(1-k,3),v=Math.round(e*100);
+      bar.style.setProperty('--p',e);num.textContent=('00'+v).slice(-3);
+      if(k<1)return requestAnimationFrame(frame);
+      setTimeout(function(){L.firstElementChild.classList.add('done');L.classList.add('out');root.classList.remove('loading');
+        try{sessionStorage.setItem('intro','1')}catch(e){}
+        setTimeout(function(){L.remove()},1000)},250);
+    }
+    requestAnimationFrame(frame);
+  })();
   var btn=document.getElementById('copy-email');
   btn.addEventListener('click',function(){
     var text=document.getElementById('email').textContent;
